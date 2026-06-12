@@ -20,6 +20,13 @@
       "email": "m.schmid@holdhausnord.at",
       "hours": 8,
       "vacDays": 5
+    },
+    {
+      "id": 1781269140251,
+      "name": "Felix Ninaus",
+      "email": "f.ninaus@holdhausnord.at",
+      "hours": 12,
+      "vacDays": 25
     }
   ],
   "entries": [],
