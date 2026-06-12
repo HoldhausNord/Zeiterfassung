@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zeiterfassung</title>
+<!-- MSAL für Microsoft 365 Login -->
+<script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+<!-- SheetJS für Excel Export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --primary: #0078d4;
+    --primary-light: #e8f3fc;
+    --success: #107c10;
+    --success-light: #dff6dd;
+    --warning: #ff8c00;
+    --warning-light: #fff4ce;
+    --danger: #d13438;
+    --danger-light: #fde7e9;
+    --border: #edebe9;
+    --border-mid: #c8c6c4;
+    --text: #323130;
+    --text-secondary: #605e5c;
+    --bg: #faf9f8;
+    --white: #ffffff;
+    --radius: 6px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+  #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; flex-direction: column; gap: 16px; }
+  #login-screen h1 { font-size: 24px; font-weight: 600; color: var(--text); }
+  #login-screen p { color: var(--text-secondary); max-width: 340px; text-align: center; }
+  .app { display: none; max-width: 1100px; margin: 0 auto; padding: 16px; }
+  .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .topbar h1 { font-size: 18px; font-weight: 600; flex: 1; }
+  .nav { display: flex; gap: 4px; margin-bottom: 16px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; width: fit-content; flex-wrap: wrap; }
+  .nav button { padding: 6px 14px; border: none; background: transparent; border-radius: 4px; cursor: pointer; font-size: 13px; color: var(--text-secondary); font-family: inherit; }
+  .nav button.active { background: var(--primary); color: white; font-weight: 500; }
+  .nav button:hover:not(.active) { background: var(--border); }
+  .view { display: none; } .view.active { display: block; }
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field label { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+  .field input, .field select { padding: 6px 10px; border: 1px solid var(--border-mid); border-radius: var(--radius); font-size: 13px; font-family: inherit; color: var(--text); background: var(--white); }
+  .field input:focus, .field select:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+  .field input[type=checkbox] { width: 16px; height: 16px; margin-top: 6px; accent-color: var(--primary); }
+  .btn { padding: 6px 14px; border: 1px solid var(--border-mid); border-radius: var(--radius); background: var(--white); color: var(--text); font-size: 13px; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; }
+  .btn:hover { background: var(--border); }
+  .btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+  .btn-primary:hover { background: #006cbd; border-color: #006cbd; }
+  .btn-success { background: var(--success); color: white; border-color: var(--success); }
+  .btn-success:hover { background: #0a5e0a; }
+  .btn-danger { color: var(--danger); border-color: transparent; }
+  .btn-danger:hover { background: var(--danger-light); }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .stat { background: var(--bg); border-radius: var(--radius); padding: 10px 12px; border: 1px solid var(--border); }
+  .stat-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 2px; }
+  .stat-val { font-size: 18px; font-weight: 600; color: var(--text); }
+  .empty { color: var(--text-secondary); padding: 24px; text-align: center; font-style: italic; }
+  .sel-btn { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--white); cursor: pointer; width: 100%; text-align: left; margin-bottom: 8px; font-family: inherit; font-size: 14px; color: var(--text); }
+  .sel-btn:hover { background: var(--primary-light); border-color: var(--primary); }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+  .av0 { background: #e8f3fc; color: #0078d4; }
+  .av1 { background: #dff6dd; color: #107c10; }
+  .av2 { background: #fff4ce; color: #8a6100; }
+  .av3 { background: #fde7e9; color: #d13438; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; padding: 6px 8px; background: var(--bg); border-bottom: 2px solid var(--border-mid); font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: var(--primary-light); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .badge-ok { background: var(--success-light); color: var(--success); }
+  .badge-warn { background: var(--warning-light); color: var(--warning); }
+  .badge-err { background: var(--danger-light); color: var(--danger); }
+  .badge-info { background: var(--primary-light); color: var(--primary); }
+  .msg-ok { color: var(--success); font-size: 12px; margin-top: 6px; }
+  .msg-err { color: var(--danger); font-size: 12px; margin-top: 6px; }
+  .ot-pos { color: var(--success); font-weight: 600; }
+  .ot-neg { color: var(--danger); font-weight: 600; }
+  .prog-bg { background: var(--border); border-radius: 99px; height: 5px; margin-top: 4px; }
+  .prog { height: 5px; border-radius: 99px; }
+  .loading { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); z-index: 999; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+  .loading.active { display: flex; }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .vac-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .leave-row { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; font-size: 13px; flex-wrap: wrap; }
+  .emp-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; background: var(--white); }
+  .status-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); padding: 6px 10px; background: var(--bg); border-top: 1px solid var(--border); margin-top: 16px; border-radius: var(--radius); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+  .dot.red { background: var(--danger); }
+  .dot.orange { background: var(--warning); }
+  @media (max-width: 600px) { .app { padding: 8px; } .stat-val { font-size: 15px; } }
+</style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading" id="loading"><div class="spinner"></div><span>Bitte warten…</span></div>
+
+<!-- Login Screen -->
+<div id="login-screen">
+  <img src="https://img.icons8.com/fluency/64/time-management.png" alt="" style="width:64px;height:64px;">
+  <h1>🕐 Zeiterfassung</h1>
+  <p>Melden Sie sich mit Ihrem Microsoft 365-Konto an, um fortzufahren.</p>
+  <button class="btn btn-primary" onclick="msalLogin()" style="font-size:15px;padding:10px 24px;">
+    Mit Microsoft 365 anmelden
+  </button>
+  <div id="login-error" class="msg-err" style="display:none;"></div>
+</div>
+
+<!-- App -->
+<div class="app" id="app">
+  <div class="topbar">
+    <h1>🕐 Zeiterfassung</h1>
+    <span id="user-name" style="font-size:13px;color:var(--text-secondary);"></span>
+    <button class="btn" onclick="msalLogout()" style="font-size:12px;">Abmelden</button>
+  </div>
+
+  <div class="nav">
+    <button class="active" onclick="show('erfassen')">✏️ Erfassen</button>
+    <button onclick="show('auswertung')">📊 Auswertung</button>
+    <button onclick="show('urlaub')">🏖️ Urlaub</button>
+    <button onclick="show('stammdaten')">👥 Mitarbeiter</button>
+  </div>
+
+  <!-- ERFASSEN -->
+  <div class="view active" id="view-erfassen">
+    <div class="card" id="emp-select-card">
+      <div class="card-title">Wer erfasst heute?</div>
+      <div id="emp-select-list"></div>
+    </div>
+    <div id="entry-form" style="display:none;">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <div id="form-avatar" class="avatar av0"></div>
+          <div style="flex:1;">
+            <div id="form-empname" style="font-size:16px;font-weight:600;"></div>
+            <div id="form-empdetail" style="font-size:12px;color:var(--text-secondary);margin-top:2px;"></div>
+          </div>
+          <button class="btn" onclick="deselectEmp()" style="font-size:12px;">Wechseln</button>
+        </div>
+        <div class="card-title">Arbeitszeit eintragen</div>
+        <div class="row">
+          <div class="field"><label>Datum</label><input type="date" id="entry-date" style="width:145px;"></div>
+          <div class="field"><label>Von</label><input type="time" id="entry-from" style="width:95px;"></div>
+          <div class="field"><label>Bis</label><input type="time" id="entry-to" style="width:95px;"></div>
+          <div class="field"><label>Pause (Min.)</label><input type="number" id="entry-break" value="30" min="0" style="width:80px;"></div>
+          <div class="field"><label>KM gefahren</label><input type="number" id="entry-km" value="0" min="0" step="1" style="width:80px;"></div>
+          <div class="field"><label>Diäten <span style="font-size:10px;color:var(--text-secondary);">&gt;40km&amp;&gt;6h</span></label><input type="checkbox" id="entry-diaet"></div>
+          <div class="field"><label>Notiz</label><input type="text" id="entry-note" placeholder="optional" style="width:130px;"></div>
+          <button class="btn btn-primary" onclick="addEntry()">💾 Speichern</button>
+        </div>
+        <div id="entry-msg"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <div class="card-title" style="margin:0;">Monatsübersicht</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="filter-month" style="padding:5px 8px;border:1px solid var(--border-mid);border-radius:var(--radius);font-size:13px;font-family:inherit;" onchange="renderEntries()"></select>
+            <button class="btn btn-success" onclick="exportExcel()">📥 Excel Export</button>
+          </div>
+        </div>
+        <div class="stat-grid" id="entry-stats"></div>
+        <div style="overflow-x:auto;"><div id="entry-list"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUSWERTUNG -->
+  <div class="view" id="view-auswertung">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <div><div class="card-title" style="margin:0 0 6px;">Monatsauswertung</div>
+        <select id="aus-month" style="padding:5px 8px;border:1px solid var(--border-mid);border-radius:var(--radius);font-size:13px;font-family:inherit;" onchange="renderAuswertung()"></select></div>
+        <button class="btn btn-success" onclick="exportAllExcel()">📥 Alle Mitarbeiter exportieren</button>
+      </div>
+      <div id="aus-content"></div>
+    </div>
+  </div>
+
+  <!-- URLAUB -->
+  <div class="view" id="view-urlaub">
+    <div class="card">
+      <div class="card-title">Urlaubsantrag</div>
+      <div class="row">
+        <div class="field"><label>Mitarbeiter</label>
+          <select id="vac-emp" style="padding:6px 10px;border:1px solid var(--border-mid);border-radius:var(--radius);font-size:13px;font-family:inherit;"><option value="">Bitte wählen</option></select>
+        </div>
+        <div class="field"><label>Von</label><input type="date" id="vac-from"></div>
+        <div class="field"><label>Bis</label><input type="date" id="vac-to"></div>
+        <button class="btn btn-primary" onclick="addLeave()">Beantragen</button>
+      </div>
+      <div id="vac-msg"></div>
+    </div>
+    <div class="card"><div class="card-title">Urlaubskonto (aktuelles Jahr)</div><div id="vac-balance"></div></div>
+    <div class="card"><div class="card-title">Alle Anträge</div><div id="leave-list"></div></div>
+  </div>
+
+  <!-- STAMMDATEN -->
+  <div class="view" id="view-stammdaten">
+    <div class="card">
+      <div class="card-title">Neuer Mitarbeiter</div>
+      <div class="row">
+        <div class="field" style="flex:2;min-width:140px;"><label>Name</label><input id="new-name" type="text" placeholder="Maria Muster"></div>
+        <div class="field" style="width:110px;"><label>Wochenstunden</label><input id="new-hours" type="number" min="1" max="60" value="40"></div>
+        <div class="field" style="width:110px;"><label>Urlaubstage/Jahr</label><input id="new-vac" type="number" min="0" max="60" value="25"></div>
+        <button class="btn btn-primary" onclick="addEmp()">Hinzufügen</button>
+      </div>
+      <div id="emp-add-msg"></div>
+    </div>
+    <div id="emp-list"></div>
+    <div class="card" style="background:var(--warning-light);border-color:var(--warning);">
+      <div class="card-title" style="color:var(--warning);">⚙️ Datenverwaltung</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" onclick="createBackup()">💾 Backup erstellen</button>
+        <button class="btn" onclick="showBackups()">📋 Backups anzeigen</button>
+      </div>
+      <div id="backup-info" style="font-size:12px;color:var(--text-secondary);margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="dot" id="status-dot"></div>
+    <span id="status-text">Verbinde mit SharePoint…</span>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// KONFIGURATION – HIER ANPASSEN!
+// ═══════════════════════════════════════════════════════
+var CONFIG = {
+  // Azure App Registration (aus Schritt 2 der Anleitung):
+  clientId: "f07518cb-7d69-4849-86b8-4ea75bd93556",           // z.B. "a1b2c3d4-..."
+  tenantId: "a64b823d-7564-4822-9d71-478a3eaae5e9",               // z.B. "contoso.onmicrosoft.com"
+
+  // SharePoint-Einstellungen (aus Schritt 3 der Anleitung):
+  siteUrl: "https://holdhausnord.sharepoint.com/sites/Zeiterfassung/SiteAssets/zeiterfassung.html",
+  listNames: {
+    employees: "ZE_Mitarbeiter",
+    entries:   "ZE_Eintraege",
+    leaves:    "ZE_Urlaub",
+    backups:   "ZE_Backups"
+  }
+};
+
+var KM_SATZ   = 0.42;
+var DIAET_SATZ = 26.40;
+
+// ── MSAL Setup (lazy init to avoid SharePoint iframe timing issues) ────
+var msalClient = null;
+var scopes = ["Sites.ReadWrite.All", "User.Read"];
+
+function getMsalClient() {
+  if (!msalClient) {
+    var msalConfig = {
+      auth: {
+        clientId: CONFIG.clientId,
+        authority: "https://login.microsoftonline.com/" + CONFIG.tenantId,
+        redirectUri: window.location.href.split('?')[0].split('#')[0]
+      },
+      cache: { cacheLocation: "sessionStorage", storeAuthStateInCookie: true }
+    };
+    msalClient = new msal.PublicClientApplication(msalConfig);
+  }
+  return msalClient;
+}
+
+let currentUser = null;
+let employees = [], entries = [], leaves = [];
+let selectedEmpId = null;
+
+// ── Auth ───────────────────────────────────────────────
+async function msalLogin() {
+  try {
+    var client = getMsalClient();
+    var resp = await client.loginPopup({ scopes });
+    currentUser = resp.account;
+    await initApp();
+  } catch(e) {
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('login-error').textContent = 'Anmeldung fehlgeschlagen: ' + e.message;
+  }
+}
+
+function msalLogout() {
+  getMsalClient().logoutPopup();
+  location.reload();
+}
+
+async function getToken() {
+  var client = getMsalClient();
+  var accounts = client.getAllAccounts();
+  if (!accounts.length) throw new Error("Nicht angemeldet");
+  var resp = await client.acquireTokenSilent({ scopes, account: accounts[0] });
+  return resp.accessToken;
+}
+
+// ── SharePoint REST API ────────────────────────────────
+async function spGet(list) {
+  const token = await getToken();
+  const url = `${CONFIG.siteUrl}/_api/web/lists/getbytitle('${list}')/items?$top=5000`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json;odata=nometadata' }});
+  if (!r.ok) throw new Error(`GET ${list} failed: ${r.status}`);
+  const d = await r.json();
+  return d.value || [];
+}
+
+async function spAdd(list, fields) {
+  const token = await getToken();
+  const url = `${CONFIG.siteUrl}/_api/web/lists/getbytitle('${list}')/items`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json;odata=nometadata', 'Content-Type': 'application/json;odata=nometadata' },
+    body: JSON.stringify(fields)
+  });
+  if (!r.ok) throw new Error(`ADD ${list} failed: ${r.status}`);
+  return await r.json();
+}
+
+async function spUpdate(list, id, fields) {
+  const token = await getToken();
+  const url = `${CONFIG.siteUrl}/_api/web/lists/getbytitle('${list}')/items(${id})`;
+  await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json;odata=nometadata', 'Content-Type': 'application/json;odata=nometadata', 'IF-MATCH': '*', 'X-HTTP-Method': 'MERGE' },
+    body: JSON.stringify(fields)
+  });
+}
+
+async function spDelete(list, id) {
+  const token = await getToken();
+  const url = `${CONFIG.siteUrl}/_api/web/lists/getbytitle('${list}')/items(${id})`;
+  await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'IF-MATCH': '*', 'X-HTTP-Method': 'DELETE' }});
+}
+
+// ── Daten laden / speichern ────────────────────────────
+function loading(show) {
+  document.getElementById('loading').className = 'loading' + (show ? ' active' : '');
+}
+
+function setStatus(ok, text) {
+  document.getElementById('status-dot').className = 'dot' + (ok ? '' : ' red');
+  document.getElementById('status-text').textContent = text;
+}
+
+async function loadData() {
+  loading(true);
+  try {
+    const [empRows, entryRows, leaveRows] = await Promise.all([
+      spGet(CONFIG.listNames.employees),
+      spGet(CONFIG.listNames.entries),
+      spGet(CONFIG.listNames.leaves)
+    ]);
+    employees = empRows.map(r => ({ id: r.Id, name: r.Title, hours: r.Wochenstunden, vacDays: r.Urlaubstage }));
+    entries   = entryRows.map(r => ({
+      id: r.Id, empId: r.MitarbeiterId, date: r.Datum, from: r.Von, to: r.Bis,
+      break: r.Pause||0, duration: r.Dauer||0, km: r.Kilometer||0,
+      kmKosten: (r.Kilometer||0)*KM_SATZ, diaet: r.Diaeten||false,
+      diaetKosten: r.Diaeten ? DIAET_SATZ : 0, note: r.Notiz||''
+    }));
+    leaves = leaveRows.map(r => ({
+      id: r.Id, empId: r.MitarbeiterId, empName: r.MitarbeiterName||'',
+      from: r.Von, to: r.Bis, status: r.Status||'ausstehend'
+    }));
+    setStatus(true, 'Verbunden mit SharePoint · Zuletzt geladen: ' + new Date().toLocaleTimeString('de-AT'));
+  } catch(e) {
+    setStatus(false, 'Fehler: ' + e.message + ' – Prüfe die Konfiguration in der HTML-Datei');
+    // Fallback: leere Arrays
+  }
+  loading(false);
+}
+
+async function initApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-name').textContent = currentUser?.name || '';
+  await loadData();
+  renderEmpSelect();
+}
+
+// Beim Laden prüfen ob schon eingeloggt
+window.addEventListener('load', async () => {
+  try {
+    var client = getMsalClient();
+    var accounts = client.getAllAccounts();
+    if (accounts.length > 0) {
+      currentUser = accounts[0];
+      await initApp();
+    }
+  } catch(e) {
+    console.warn('Auto-login check failed:', e.message);
+  }
+});
+
+// ── Hilfsfunktionen ────────────────────────────────────
+function workdays(from, to) {
+  let d = 0, c = new Date(from + 'T12:00:00'), end = new Date(to + 'T12:00:00');
+  while (c <= end) { if (c.getDay() !== 0 && c.getDay() !== 6) d++; c.setDate(c.getDate()+1); }
+  return d;
+}
+function usedVacYear(empId, yr) {
+  return leaves.filter(l => l.empId===empId && l.status!=='abgelehnt' && new Date(l.from+'T12:00:00').getFullYear()===yr)
+    .reduce((s,l) => s+workdays(l.from,l.to), 0);
+}
+function usedVacMonth(empId, month) {
+  return leaves.filter(l => l.empId===empId && l.status!=='abgelehnt' && l.from.slice(0,7)===month)
+    .reduce((s,l) => s+workdays(l.from,l.to), 0);
+}
+function getLeavesForMonth(empId, month) {
+  return leaves.filter(l => l.empId===empId && l.status!=='abgelehnt' && l.from.slice(0,7)===month);
+}
+function durMs(from, to, brk) {
+  const [fh,fm] = from.split(':').map(Number), [th,tm] = to.split(':').map(Number);
+  return Math.max(0, (th*60+tm - fh*60-fm - brk)*60000);
+}
+function fmtH(ms) { return (ms/3600000).toFixed(2)+' h'; }
+function fmtEur(v) { return v.toFixed(2).replace('.',',')+' €'; }
+function fmtDate(d) { return new Date(d+'T12:00:00').toLocaleDateString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function monthKey(d) { return d.slice(0,7); }
+function monthLabel(k) { return new Date(k+'-01').toLocaleDateString('de-AT',{month:'long',year:'numeric'}); }
+function dailyTarget(emp) { return (emp.hours/5)*3600000; }
+function getEmp(id) { return employees.find(e => e.id===id); }
+function avClass(i) { return 'av'+(i%4); }
+function ini(n) { return n.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2); }
+
+// ── Navigation ─────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  const names = ['erfassen','auswertung','urlaub','stammdaten'];
+  document.querySelectorAll('.nav button')[names.indexOf(id)].classList.add('active');
+  if (id==='erfassen') renderEmpSelect();
+  if (id==='auswertung') renderAuswertung();
+  if (id==='urlaub') renderUrlaub();
+  if (id==='stammdaten') renderEmpList();
+}
+
+// ── Mitarbeiter auswählen ──────────────────────────────
+function renderEmpSelect() {
+  const el = document.getElementById('emp-select-list');
+  if (!employees.length) { el.innerHTML='<div class="empty">Bitte zuerst Mitarbeiter unter "Mitarbeiter" anlegen.</div>'; return; }
+  const yr = new Date().getFullYear();
+  el.innerHTML = employees.map((e,i) => {
+    const rem = e.vacDays - usedVacYear(e.id, yr);
+    return `<button class="sel-btn" onclick="selectEmp(${e.id})">
+      <div class="avatar ${avClass(i)}">${ini(e.name)}</div>
+      <span style="flex:1;font-weight:500;">${e.name}</span>
+      <span style="font-size:12px;color:var(--text-secondary);">${e.hours} h/Wo &nbsp;·&nbsp; <span style="color:${rem<=3?'var(--danger)':'var(--success)'};">${rem} Urlaubstage</span></span>
+    </button>`;
+  }).join('');
+  if (selectedEmpId && getEmp(selectedEmpId)) showEntryForm();
+  else { document.getElementById('emp-select-card').style.display='block'; document.getElementById('entry-form').style.display='none'; }
+}
+
+function selectEmp(id) { selectedEmpId = id; showEntryForm(); }
+function deselectEmp() { selectedEmpId = null; document.getElementById('emp-select-card').style.display='block'; document.getElementById('entry-form').style.display='none'; renderEmpSelect(); }
+
+function showEntryForm() {
+  const emp = getEmp(selectedEmpId); if (!emp) return;
+  const i = employees.indexOf(emp);
+  document.getElementById('emp-select-card').style.display='none';
+  document.getElementById('entry-form').style.display='block';
+  const av = document.getElementById('form-avatar');
+  av.textContent = ini(emp.name); av.className = 'avatar '+avClass(i);
+  document.getElementById('form-empname').textContent = emp.name;
+  const yr = new Date().getFullYear();
+  const rem = emp.vacDays - usedVacYear(emp.id, yr);
+  document.getElementById('form-empdetail').textContent = `${emp.hours} h/Woche · Resturlaub ${yr}: ${rem} von ${emp.vacDays} Tagen`;
+  document.getElementById('entry-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('entry-from').value = '08:00';
+  document.getElementById('entry-to').value = '16:00';
+  document.getElementById('entry-break').value = '30';
+  document.getElementById('entry-km').value = '0';
+  document.getElementById('entry-diaet').checked = false;
+  document.getElementById('entry-note').value = '';
+  refreshMonthFilter(); renderEntries();
+}
+
+function refreshMonthFilter() {
+  const fm = document.getElementById('filter-month'); if (!fm) return;
+  const months = {};
+  entries.filter(e => e.empId===selectedEmpId).forEach(e => months[monthKey(e.date)]=true);
+  const now = new Date().toISOString().slice(0,7); months[now]=true;
+  const keys = Object.keys(months).sort().reverse();
+  const cur = fm.value || now;
+  fm.innerHTML = keys.map(k => `<option value="${k}"${k===cur?' selected':''}>${monthLabel(k)}</option>`).join('');
+}
+
+// ── Einträge erfassen ──────────────────────────────────
+async function addEntry() {
+  const emp = getEmp(selectedEmpId); if (!emp) return;
+  const date  = document.getElementById('entry-date').value;
+  const from  = document.getElementById('entry-from').value;
+  const to    = document.getElementById('entry-to').value;
+  const brk   = parseInt(document.getElementById('entry-break').value)||0;
+  const km    = parseFloat(document.getElementById('entry-km').value)||0;
+  const diaet = document.getElementById('entry-diaet').checked;
+  const note  = document.getElementById('entry-note').value.trim();
+  const msg   = document.getElementById('entry-msg');
+  if (!date||!from||!to) { msg.className='msg-err'; msg.textContent='Bitte Datum, Von und Bis ausfüllen.'; return; }
+  const ms = durMs(from,to,brk);
+  if (ms<=0) { msg.className='msg-err'; msg.textContent='Endzeit muss nach Startzeit liegen.'; return; }
+  if (entries.find(e => e.empId===selectedEmpId && e.date===date)) { msg.className='msg-err'; msg.textContent='Für dieses Datum gibt es bereits einen Eintrag.'; return; }
+  loading(true);
+  try {
+    const item = await spAdd(CONFIG.listNames.entries, {
+      Title: `${emp.name} – ${date}`,
+      MitarbeiterId: emp.id, Datum: date, Von: from, Bis: to,
+      Pause: brk, Dauer: ms, Kilometer: km, Diaeten: diaet, Notiz: note
+    });
+    entries.push({ id: item.Id, empId: emp.id, date, from, to, break: brk, duration: ms, km, kmKosten: km*KM_SATZ, diaet, diaetKosten: diaet?DIAET_SATZ:0, note });
+    entries.sort((a,b) => a.date<b.date?1:-1);
+    msg.className='msg-ok'; msg.textContent=`Gespeichert: ${fmtH(ms)}${km?' · '+km+' km ('+fmtEur(km*KM_SATZ)+')':''}${diaet?' · Diäten '+fmtEur(DIAET_SATZ):''}`;
+    document.getElementById('entry-date').value=''; document.getElementById('entry-km').value='0';
+    document.getElementById('entry-diaet').checked=false; document.getElementById('entry-note').value='';
+    refreshMonthFilter(); renderEntries(); showEntryForm();
+    await autoBackup();
+  } catch(e) { msg.className='msg-err'; msg.textContent='Fehler beim Speichern: '+e.message; }
+  loading(false);
+}
+
+async function deleteEntry(id) {
+  if (!confirm('Eintrag wirklich löschen?')) return;
+  loading(true);
+  try {
+    await spDelete(CONFIG.listNames.entries, id);
+    entries = entries.filter(e => e.id!==id);
+    renderEntries();
+  } catch(e) { alert('Fehler: '+e.message); }
+  loading(false);
+}
+
+function renderEntries() {
+  const emp = getEmp(selectedEmpId); if (!emp) return;
+  const month = document.getElementById('filter-month').value;
+  const filtered = entries.filter(e => e.empId===selectedEmpId && monthKey(e.date)===month);
+  const totalMs = filtered.reduce((s,e) => s+e.duration, 0);
+  const days = filtered.length;
+  const target = dailyTarget(emp)*days;
+  const ot = totalMs-target;
+  const totalKm = filtered.reduce((s,e) => s+(e.km||0), 0);
+  const totalKmK = filtered.reduce((s,e) => s+(e.kmKosten||0), 0);
+  const totalDiaetK = filtered.reduce((s,e) => s+(e.diaetKosten||0), 0);
+  const yr = parseInt(month.slice(0,4));
+  const vacM = usedVacMonth(emp.id, month);
+  const remYr = emp.vacDays - usedVacYear(emp.id, yr);
+
+  document.getElementById('entry-stats').innerHTML =
+    `<div class="stat"><div class="stat-label">Arbeitstage</div><div class="stat-val">${days}</div></div>
+     <div class="stat"><div class="stat-label">Stunden Ist</div><div class="stat-val">${fmtH(totalMs)}</div></div>
+     <div class="stat"><div class="stat-label">Überstunden</div><div class="stat-val ${ot>=0?'ot-pos':'ot-neg'}">${ot>=0?'+':''}${fmtH(ot)}</div></div>
+     <div class="stat"><div class="stat-label">Urlaub (Monat)</div><div class="stat-val">${vacM} AT</div></div>
+     <div class="stat" style="border-color:${remYr<=3?'var(--danger)':'var(--success)'};"><div class="stat-label">Resturlaub ${yr}</div><div class="stat-val" style="color:${remYr<=3?'var(--danger)':'var(--success)'};">${remYr} AT</div></div>
+     <div class="stat"><div class="stat-label">Km-Geld</div><div class="stat-val">${fmtEur(totalKmK)}</div></div>
+     <div class="stat"><div class="stat-label">Diäten</div><div class="stat-val">${fmtEur(totalDiaetK)}</div></div>
+     <div class="stat" style="border-color:var(--success);"><div class="stat-label">Kosten gesamt</div><div class="stat-val" style="color:var(--success);">${fmtEur(totalKmK+totalDiaetK)}</div></div>`;
+
+  const el = document.getElementById('entry-list');
+  if (!filtered.length) { el.innerHTML='<div class="empty">Keine Einträge in diesem Monat.</div>'; return; }
+  el.innerHTML = `<table><thead><tr><th>Datum</th><th>Von–Bis</th><th>Pause</th><th>Ist</th><th>Diff</th><th>KM</th><th>Km-Geld</th><th>Diäten</th><th>Notiz</th><th></th></tr></thead><tbody>`+
+    filtered.map(e => {
+      const diff = e.duration - dailyTarget(emp);
+      return `<tr><td>${fmtDate(e.date)}</td><td>${e.from}–${e.to}</td><td style="text-align:center;">${e.break} min</td>
+        <td style="font-weight:600;">${fmtH(e.duration)}</td>
+        <td class="${diff>=0?'ot-pos':'ot-neg'}">${diff>=0?'+':''}${fmtH(diff)}</td>
+        <td>${e.km||0} km</td><td>${fmtEur(e.kmKosten||0)}</td>
+        <td>${e.diaet?`<span class="badge badge-info">${fmtEur(DIAET_SATZ)}</span>`:'–'}</td>
+        <td style="color:var(--text-secondary);">${e.note||'–'}</td>
+        <td><button class="btn btn-danger" style="padding:3px 6px;" onclick="deleteEntry(${e.id})">🗑</button></td></tr>`;
+    }).join('') +
+    `<tr style="background:var(--bg);font-weight:600;"><td colspan="5" style="color:var(--text-secondary);font-size:11px;">SUMME</td>
+     <td>${totalKm} km</td><td>${fmtEur(totalKmK)}</td><td>${fmtEur(totalDiaetK)}</td>
+     <td colspan="2" style="color:var(--success);">${fmtEur(totalKmK+totalDiaetK)}</td></tr>
+     </tbody></table>`;
+}
+
+// ── Excel Export ───────────────────────────────────────
+function buildSheetData(emp, month) {
+  const yr = parseInt(month.slice(0,4));
+  const filtered = entries.filter(e => e.empId===emp.id && monthKey(e.date)===month).slice().sort((a,b) => a.date>b.date?1:-1);
+  const usedTotal = usedVacYear(emp.id, yr);
+  const vacM = usedVacMonth(emp.id, month);
+  const remaining = emp.vacDays - usedTotal;
+  const monthLeaves = getLeavesForMonth(emp.id, month);
+  const totalMs = filtered.reduce((s,e)=>s+e.duration,0);
+  const days = filtered.length;
+  const target = dailyTarget(emp);
+  const totalKmK = filtered.reduce((s,e)=>s+(e.kmKosten||0),0);
+  const totalDiaetK = filtered.reduce((s,e)=>s+(e.diaetKosten||0),0);
+  const totalKm = filtered.reduce((s,e)=>s+(e.km||0),0);
+  const ot = totalMs - target*days;
+
+  const rows = [];
+  rows.push(['ARBEITSZEIT- UND REISEKOSTENABRECHNUNG']);
+  rows.push([]);
+  rows.push(['Mitarbeiter:', emp.name, '', 'Monat:', monthLabel(month)]);
+  rows.push(['Wochenstunden:', emp.hours+' h', '', 'Jahr:', yr]);
+  rows.push(['Km-Satz:', '€ '+KM_SATZ.toFixed(2)+'/km', '', 'Diäten-Satz (§26 EStG):', '€ '+DIAET_SATZ.toFixed(2)+'/Tag']);
+  rows.push([]);
+  rows.push(['URLAUBSÜBERSICHT '+yr]);
+  rows.push(['Jahresanspruch:', emp.vacDays+' Arbeitstage']);
+  rows.push(['Verbraucht gesamt (bis Monatsende):', usedTotal+' Arbeitstage']);
+  rows.push(['  davon in '+monthLabel(month)+':', vacM+' Arbeitstage']);
+  rows.push(['Resturlaub per Monatsende:', remaining+' Arbeitstage']);
+  if (monthLeaves.length) {
+    rows.push([]);
+    rows.push(['Urlaubstage in diesem Monat:']);
+    monthLeaves.forEach(l => rows.push(['  '+fmtDate(l.from)+' – '+fmtDate(l.to), '('+workdays(l.from,l.to)+' AT)', l.status]));
+  }
+  rows.push([]);
+  rows.push(['ARBEITSZEITERFASSUNG']);
+  rows.push(['Datum','Von','Bis','Pause (Min.)','Ist (h)','Soll (h)','Differenz (h)','KM','Km-Geld (€)','Diäten','Diäten (€)','Notiz']);
+  filtered.forEach(e => {
+    const istH = e.duration/3600000, sollH = target/3600000;
+    rows.push([fmtDate(e.date), e.from, e.to, e.break, parseFloat(istH.toFixed(2)), parseFloat(sollH.toFixed(2)), parseFloat((istH-sollH).toFixed(2)), e.km||0, parseFloat((e.kmKosten||0).toFixed(2)), e.diaet?'Ja':'Nein', parseFloat((e.diaetKosten||0).toFixed(2)), e.note||'']);
+  });
+  rows.push([]);
+  rows.push(['SUMMEN','','','', parseFloat((totalMs/3600000).toFixed(2)), parseFloat((target/3600000*days).toFixed(2)), parseFloat((ot/3600000).toFixed(2)), totalKm, parseFloat(totalKmK.toFixed(2)),'','',parseFloat(totalDiaetK.toFixed(2)),'']);
+  rows.push([]);
+  rows.push(['KOSTENZUSAMMENFASSUNG']);
+  rows.push(['Kilometergeld', '('+totalKm+' km × € '+KM_SATZ.toFixed(2)+')', parseFloat(totalKmK.toFixed(2))]);
+  rows.push(['Diäten', '('+filtered.filter(e=>e.diaet).length+' Tage × € '+DIAET_SATZ.toFixed(2)+')', parseFloat(totalDiaetK.toFixed(2))]);
+  rows.push(['GESAMT', '', parseFloat((totalKmK+totalDiaetK).toFixed(2))]);
+  rows.push([]); rows.push([]);
+  rows.push(['BESTÄTIGUNG DER ARBEITSAUFZEICHNUNG']);
+  rows.push([]);
+  rows.push(['Ich bestätige die Richtigkeit der obigen Aufzeichnungen.']);
+  rows.push([]); rows.push([]);
+  rows.push(['________________________________', '', '', '________________________________']);
+  rows.push(['Datum, Unterschrift Mitarbeiter', '', '', 'Datum, Unterschrift Arbeitgeber']);
+  rows.push(['('+emp.name+')', '', '', '(Genehmigt von:)']);
+  return rows;
+}
+
+function exportExcel() {
+  const emp = getEmp(selectedEmpId); if (!emp) return;
+  const month = document.getElementById('filter-month').value;
+  const ws = XLSX.utils.aoa_to_sheet(buildSheetData(emp, month));
+  ws['!cols'] = [{wch:18},{wch:10},{wch:10},{wch:14},{wch:9},{wch:9},{wch:12},{wch:7},{wch:13},{wch:8},{wch:10},{wch:22}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, monthLabel(month).slice(0,31));
+  XLSX.writeFile(wb, `Zeiterfassung_${emp.name.replace(/\s/g,'_')}_${month}.xlsx`);
+}
+
+function exportAllExcel() {
+  const month = document.getElementById('aus-month').value || new Date().toISOString().slice(0,7);
+  if (!employees.length) return;
+  const wb = XLSX.utils.book_new();
+  employees.forEach(emp => {
+    const ws = XLSX.utils.aoa_to_sheet(buildSheetData(emp, month));
+    ws['!cols'] = [{wch:18},{wch:10},{wch:10},{wch:14},{wch:9},{wch:9},{wch:12},{wch:7},{wch:13},{wch:8},{wch:10},{wch:22}];
+    XLSX.utils.book_append_sheet(wb, ws, emp.name.slice(0,31));
+  });
+  XLSX.writeFile(wb, `Zeiterfassung_Alle_${month}.xlsx`);
+}
+
+// ── Auswertung ─────────────────────────────────────────
+function renderAuswertung() {
+  const am = document.getElementById('aus-month');
+  const months = {}; entries.forEach(e => months[monthKey(e.date)]=true);
+  const now = new Date().toISOString().slice(0,7); months[now]=true;
+  const keys = Object.keys(months).sort().reverse();
+  const cur = am.value || now;
+  am.innerHTML = keys.map(k => `<option value="${k}"${k===cur?' selected':''}>${monthLabel(k)}</option>`).join('');
+  const month = am.value || now;
+  const yr = parseInt(month.slice(0,4));
+  const ac = document.getElementById('aus-content');
+  if (!employees.length) { ac.innerHTML='<div class="empty">Keine Mitarbeiter.</div>'; return; }
+  ac.innerHTML = employees.map((emp,i) => {
+    const filtered = entries.filter(e => e.empId===emp.id && monthKey(e.date)===month);
+    const totalMs = filtered.reduce((s,e)=>s+e.duration,0);
+    const days = filtered.length;
+    const ot = totalMs - dailyTarget(emp)*days;
+    const kmK = filtered.reduce((s,e)=>s+(e.kmKosten||0),0);
+    const diaetK = filtered.reduce((s,e)=>s+(e.diaetKosten||0),0);
+    const vacM = usedVacMonth(emp.id, month);
+    const remYr = emp.vacDays - usedVacYear(emp.id, yr);
+    return `<div style="padding:12px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div class="avatar ${avClass(i)}">${ini(emp.name)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:600;">${emp.name}</div>
+          <div style="font-size:12px;color:var(--text-secondary);">${days} Arbeitstage · ${fmtH(totalMs)} · ÜSt: <span class="${ot>=0?'ot-pos':'ot-neg'}">${ot>=0?'+':''}${fmtH(ot)}</span></div>
+          <div style="font-size:12px;color:var(--text-secondary);">Urlaub Monat: ${vacM} AT &nbsp;·&nbsp; Resturlaub ${yr}: <span style="color:${remYr<=3?'var(--danger)':'var(--success)'};">${remYr} AT</span></div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px;color:var(--text-secondary);">Km-Geld: ${fmtEur(kmK)} · Diäten: ${fmtEur(diaetK)}</div>
+          <div style="font-size:15px;font-weight:600;color:var(--success);">Kosten: ${fmtEur(kmK+diaetK)}</div>
+        </div>
+      </div></div>`;
+  }).join('');
+}
+
+// ── Urlaub ─────────────────────────────────────────────
+async function addLeave() {
+  const empId = parseInt(document.getElementById('vac-emp').value);
+  const from = document.getElementById('vac-from').value;
+  const to   = document.getElementById('vac-to').value;
+  const msg  = document.getElementById('vac-msg');
+  if (!empId||!from||!to) { msg.className='msg-err'; msg.textContent='Bitte alle Felder ausfüllen.'; return; }
+  if (from>to) { msg.className='msg-err'; msg.textContent='Enddatum muss nach Startdatum liegen.'; return; }
+  const emp = getEmp(empId);
+  const yr  = new Date(from+'T12:00:00').getFullYear();
+  const d   = workdays(from,to);
+  const used = usedVacYear(empId, yr);
+  if (used+d>emp.vacDays) { msg.className='msg-err'; msg.textContent=`Nicht genug Urlaubstage! Verfügbar: ${emp.vacDays-used}, Beantragt: ${d}.`; return; }
+  loading(true);
+  try {
+    const item = await spAdd(CONFIG.listNames.leaves, { Title: emp.name+' '+from, MitarbeiterId: empId, MitarbeiterName: emp.name, Von: from, Bis: to, Status: 'ausstehend' });
+    leaves.push({ id: item.Id, empId, empName: emp.name, from, to, status: 'ausstehend' });
+    msg.className='msg-ok'; msg.textContent=d+' Arbeitstage beantragt.';
+    document.getElementById('vac-from').value=''; document.getElementById('vac-to').value='';
+    renderUrlaub();
+    if (selectedEmpId===empId) showEntryForm();
+    await autoBackup();
+  } catch(e) { msg.className='msg-err'; msg.textContent='Fehler: '+e.message; }
+  loading(false);
+}
+
+async function setLeaveStatus(id, status) {
+  loading(true);
+  try {
+    await spUpdate(CONFIG.listNames.leaves, id, { Status: status });
+    const l = leaves.find(x => x.id===id); if (l) l.status=status;
+    renderUrlaub();
+    if (l && selectedEmpId===l.empId) showEntryForm();
+  } catch(e) { alert('Fehler: '+e.message); }
+  loading(false);
+}
+
+async function deleteLeave(id) {
+  if (!confirm('Urlaubsantrag wirklich löschen?')) return;
+  loading(true);
+  try {
+    await spDelete(CONFIG.listNames.leaves, id);
+    const l = leaves.find(x => x.id===id);
+    leaves = leaves.filter(x => x.id!==id);
+    renderUrlaub();
+    if (l && selectedEmpId===l.empId) showEntryForm();
+  } catch(e) { alert('Fehler: '+e.message); }
+  loading(false);
+}
+
+function renderUrlaub() {
+  const ve = document.getElementById('vac-emp'); const cur = ve.value;
+  ve.innerHTML = '<option value="">Bitte wählen</option>' + employees.map(e => `<option value="${e.id}"${e.id==cur?' selected':''}>${e.name}</option>`).join('');
+  const yr = new Date().getFullYear();
+  document.getElementById('vac-balance').innerHTML = employees.map((emp,i) => {
+    const used = usedVacYear(emp.id, yr); const rem = emp.vacDays-used;
+    const pct = Math.min(100, Math.round((used/emp.vacDays)*100));
+    const col = pct>90?'var(--danger)':pct>70?'var(--warning)':'var(--success)';
+    return `<div class="vac-row">
+      <div class="avatar ${avClass(i)}" style="width:28px;height:28px;font-size:11px;">${ini(emp.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-weight:600;">${emp.name}</span>
+          <span style="font-size:12px;"><span style="color:var(--text-secondary);">${used} verbraucht · </span><span style="color:${col};font-weight:600;">${rem} verbleibend</span><span style="color:var(--text-secondary);"> / ${emp.vacDays}</span></span>
+        </div>
+        <div class="prog-bg"><div class="prog" style="width:${pct}%;background:${col};"></div></div>
+      </div></div>`;
+  }).join('');
+
+  const ll = document.getElementById('leave-list');
+  if (!leaves.length) { ll.innerHTML='<div class="empty">Keine Anträge.</div>'; return; }
+  ll.innerHTML = leaves.slice().sort((a,b) => b.from<a.from?-1:1).map(l => {
+    const d = workdays(l.from,l.to);
+    const cls = l.status==='genehmigt'?'badge-ok':l.status==='abgelehnt'?'badge-err':'badge-warn';
+    return `<div class="leave-row">
+      <span style="font-weight:600;min-width:110px;">${l.empName}</span>
+      <span style="color:var(--text-secondary);flex:1;">${fmtDate(l.from)} – ${fmtDate(l.to)} (${d} AT)</span>
+      <span class="badge ${cls}">${l.status}</span>
+      ${l.status==='ausstehend'?
+        `<button class="btn" style="padding:3px 8px;font-size:12px;" onclick="setLeaveStatus(${l.id},'genehmigt')">✓</button>
+         <button class="btn btn-danger" style="padding:3px 8px;font-size:12px;" onclick="setLeaveStatus(${l.id},'abgelehnt')">✗</button>`:
+        `<button class="btn btn-danger" style="padding:3px 8px;font-size:12px;" onclick="deleteLeave(${l.id})">🗑</button>`}
+    </div>`;
+  }).join('');
+}
+
+// ── Mitarbeiter verwalten ──────────────────────────────
+async function addEmp() {
+  const name  = document.getElementById('new-name').value.trim();
+  const hours = parseFloat(document.getElementById('new-hours').value);
+  const vac   = parseInt(document.getElementById('new-vac').value);
+  const msg   = document.getElementById('emp-add-msg');
+  if (!name||!hours||!vac) { msg.className='msg-err'; msg.textContent='Bitte alle Felder ausfüllen.'; return; }
+  loading(true);
+  try {
+    const item = await spAdd(CONFIG.listNames.employees, { Title: name, Wochenstunden: hours, Urlaubstage: vac });
+    employees.push({ id: item.Id, name, hours, vacDays: vac });
+    document.getElementById('new-name').value='';
+    msg.className='msg-ok'; msg.textContent=name+' wurde hinzugefügt.';
+    renderEmpList(); renderEmpSelect();
+  } catch(e) { msg.className='msg-err'; msg.textContent='Fehler: '+e.message; }
+  loading(false);
+}
+
+async function removeEmp(id) {
+  if (!confirm('Mitarbeiter wirklich löschen? Alle Einträge bleiben erhalten.')) return;
+  loading(true);
+  try {
+    await spDelete(CONFIG.listNames.employees, id);
+    employees = employees.filter(e => e.id!==id);
+    if (selectedEmpId===id) selectedEmpId=null;
+    renderEmpList(); renderEmpSelect();
+  } catch(e) { alert('Fehler: '+e.message); }
+  loading(false);
+}
+
+function renderEmpList() {
+  const el = document.getElementById('emp-list');
+  const yr = new Date().getFullYear();
+  if (!employees.length) { el.innerHTML='<div class="empty">Noch keine Mitarbeiter angelegt.</div>'; return; }
+  el.innerHTML = employees.map((emp,i) => {
+    const rem = emp.vacDays - usedVacYear(emp.id, yr);
+    return `<div class="emp-item">
+      <div class="avatar ${avClass(i)}">${ini(emp.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;">${emp.name}</div>
+        <div style="font-size:12px;color:var(--text-secondary);">${emp.hours} h/Woche · Resturlaub: ${rem} / ${emp.vacDays} Tage</div>
+      </div>
+      <button class="btn btn-danger" onclick="removeEmp(${emp.id})">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Backup ─────────────────────────────────────────────
+let lastAutoBackup = null;
+
+async function autoBackup() {
+  const now = new Date();
+  if (lastAutoBackup && (now-lastAutoBackup) < 300000) return; // max. 1x alle 5 Min
+  lastAutoBackup = now;
+  try {
+    const snapshot = JSON.stringify({ ts: now.toISOString(), employees, entries, leaves });
+    await spAdd(CONFIG.listNames.backups, { Title: 'AutoBackup '+now.toLocaleString('de-AT'), Daten: snapshot });
+  } catch(e) { console.warn('Backup fehlgeschlagen:', e.message); }
+}
+
+async function createBackup() {
+  loading(true);
+  try {
+    const now = new Date();
+    const snapshot = JSON.stringify({ ts: now.toISOString(), employees, entries, leaves });
+    await spAdd(CONFIG.listNames.backups, { Title: 'Manuell '+now.toLocaleString('de-AT'), Daten: snapshot });
+    document.getElementById('backup-info').textContent = '✅ Backup erstellt: '+now.toLocaleString('de-AT');
+  } catch(e) {
+    document.getElementById('backup-info').textContent = '❌ Fehler: '+e.message;
+  }
+  loading(false);
+}
+
+async function showBackups() {
+  loading(true);
+  try {
+    const rows = await spGet(CONFIG.listNames.backups);
+    const info = document.getElementById('backup-info');
+    if (!rows.length) { info.textContent='Noch keine Backups vorhanden.'; loading(false); return; }
+    const sorted = rows.sort((a,b) => b.Title.localeCompare(a.Title)).slice(0,10);
+    info.innerHTML = '<strong>Letzte 10 Backups:</strong><br>' + sorted.map(r => `· ${r.Title}`).join('<br>');
+  } catch(e) {
+    document.getElementById('backup-info').textContent='Fehler: '+e.message;
+  }
+  loading(false);
+}
+</script>
+</body>
+</html>
