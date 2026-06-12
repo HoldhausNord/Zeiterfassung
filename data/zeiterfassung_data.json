@@ -1,0 +1,14 @@
+{
+  "employees": [
+    {
+      "id": 1781269015769,
+      "name": "Luca Holdhaus",
+      "email": "l.holdhaus@holdhausnord.at",
+      "hours": 14,
+      "vacDays": 10
+    }
+  ],
+  "entries": [],
+  "leaves": [],
+  "backups": []
+}
