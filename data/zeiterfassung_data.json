@@ -29,7 +29,22 @@
       "vacDays": 25
     }
   ],
-  "entries": [],
+  "entries": [
+    {
+      "id": 1781343033032,
+      "empId": 1781269140251,
+      "date": "2026-05-02",
+      "from": "08:00",
+      "to": "12:00",
+      "break": 0,
+      "duration": 14400000,
+      "km": 0,
+      "kmKosten": 0,
+      "diaet": false,
+      "diaetKosten": 0,
+      "note": ""
+    }
+  ],
   "leaves": [],
   "backups": []
 }
