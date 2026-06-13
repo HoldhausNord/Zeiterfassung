@@ -309,6 +309,20 @@
       "diaet": false,
       "diaetKosten": 0,
       "note": ""
+    },
+    {
+      "id": 1781346164177,
+      "empId": 1781269140251,
+      "date": "2026-05-01",
+      "from": "08:00",
+      "to": "08:01",
+      "break": 0,
+      "duration": 60000,
+      "km": 0,
+      "kmKosten": 0,
+      "diaet": false,
+      "diaetKosten": 0,
+      "note": ""
     }
   ],
   "leaves": [],
