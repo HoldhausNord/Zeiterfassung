@@ -227,6 +227,20 @@
       "note": ""
     },
     {
+      "id": 1781520364830,
+      "empId": 1781269015769,
+      "date": "2026-05-09",
+      "from": "10:00",
+      "to": "13:30",
+      "break": 0,
+      "duration": 12600000,
+      "km": 0,
+      "kmKosten": 0,
+      "diaet": false,
+      "diaetKosten": 0,
+      "note": ""
+    },
+    {
       "id": 1781343465027,
       "empId": 1781269140251,
       "date": "2026-05-09",
@@ -283,20 +297,6 @@
       "note": ""
     },
     {
-      "id": 1781520291959,
-      "empId": 1781269015769,
-      "date": "2026-05-05",
-      "from": "09:00",
-      "to": "16:30",
-      "break": 30,
-      "duration": 25200000,
-      "km": 0,
-      "kmKosten": 0,
-      "diaet": false,
-      "diaetKosten": 0,
-      "note": ""
-    },
-    {
       "id": 1781343129235,
       "empId": 1781269140251,
       "date": "2026-05-05",
@@ -304,6 +304,20 @@
       "to": "15:00",
       "break": 0,
       "duration": 10800000,
+      "km": 0,
+      "kmKosten": 0,
+      "diaet": false,
+      "diaetKosten": 0,
+      "note": ""
+    },
+    {
+      "id": 1781520291959,
+      "empId": 1781269015769,
+      "date": "2026-05-05",
+      "from": "09:00",
+      "to": "16:30",
+      "break": 30,
+      "duration": 25200000,
       "km": 0,
       "kmKosten": 0,
       "diaet": false,
