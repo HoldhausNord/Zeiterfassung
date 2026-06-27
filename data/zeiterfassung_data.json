@@ -31,21 +31,6 @@
   ],
   "entries": [
     {
-      "id": 1782555279492,
-      "empId": 1781269140251,
-      "date": "2026-06-27",
-      "type": "arbeitszeit",
-      "from": "08:00",
-      "to": "10:24",
-      "break": 0,
-      "duration": 8640000,
-      "km": 0,
-      "kmKosten": 0,
-      "diaet": false,
-      "diaetKosten": 0,
-      "note": ""
-    },
-    {
       "id": 1782470729601,
       "empId": 1781269015769,
       "date": "2026-06-26",
