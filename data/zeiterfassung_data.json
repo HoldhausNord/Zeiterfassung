@@ -286,21 +286,6 @@
       "note": ""
     },
     {
-      "id": 1787044518818,
-      "empId": 1781269015769,
-      "date": "2026-07-20",
-      "type": "arbeitszeit",
-      "from": "08:00",
-      "to": "17:00",
-      "break": 30,
-      "duration": 30600000,
-      "km": 0,
-      "kmKosten": 0,
-      "diaet": false,
-      "diaetKosten": 0,
-      "note": ""
-    },
-    {
       "id": 1784392422998,
       "empId": 1781269140251,
       "date": "2026-07-18",
