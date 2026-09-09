@@ -27,6 +27,13 @@
       "email": "m.schmid@holdhausnord.at",
       "hours": 8,
       "vacDays": 5
+    },
+    {
+      "id": 1788951113648,
+      "name": "Fabian Wallner",
+      "email": "f.wallner@holdhausnord.at",
+      "hours": 28,
+      "vacDays": 25
     }
   ],
   "entries": [
