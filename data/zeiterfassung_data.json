@@ -33,7 +33,8 @@
       "name": "Fabian Wallner",
       "email": "f.wallner@holdhausnord.at",
       "hours": 28,
-      "vacDays": 25
+      "vacDays": 25,
+      "otOffset": 0
     }
   ],
   "entries": [
