@@ -34,7 +34,13 @@
       "email": "f.wallner@holdhausnord.at",
       "hours": 28,
       "vacDays": 25,
-      "otOffset": 0
+      "otOffset": 0,
+      "otCorrections": [
+        {
+          "month": "2026-07",
+          "hours": 968.8
+        }
+      ]
     }
   ],
   "entries": [
