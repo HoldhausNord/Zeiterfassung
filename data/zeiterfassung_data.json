@@ -6,7 +6,12 @@
       "email": "l.holdhaus@holdhausnord.at",
       "hours": 14,
       "vacDays": 10,
-      "otCorrections": []
+      "otCorrections": [
+        {
+          "month": "2026-04",
+          "hours": 15.85
+        }
+      ]
     },
     {
       "id": 1781269051742,
