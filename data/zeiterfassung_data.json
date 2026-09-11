@@ -72,12 +72,7 @@
       "hours": 28,
       "vacDays": 25,
       "otOffset": 0,
-      "otCorrections": [
-        {
-          "month": "2026-07",
-          "hours": -968.8
-        }
-      ]
+      "otCorrections": []
     }
   ],
   "entries": [
