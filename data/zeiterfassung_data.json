@@ -56,7 +56,7 @@
       "name": "Felix Ninaus",
       "email": "f.ninaus@holdhausnord.at",
       "hours": 12,
-      "vacDays": 25,
+      "vacDays": 35,
       "hoursHistory": [
         {
           "from": "2026-01-01",
@@ -69,7 +69,7 @@
           "hours": 88.25
         }
       ],
-      "vacUsedOverride": 0
+      "vacUsedOverride": 3
     },
     {
       "id": 1783595295646,
