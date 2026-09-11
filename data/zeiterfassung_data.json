@@ -5,7 +5,13 @@
       "name": "Luca Holdhaus",
       "email": "l.holdhaus@holdhausnord.at",
       "hours": 14,
-      "vacDays": 10
+      "vacDays": 10,
+      "otCorrections": [
+        {
+          "month": "2026-04",
+          "hours": -70
+        }
+      ]
     },
     {
       "id": 1781269051742,
