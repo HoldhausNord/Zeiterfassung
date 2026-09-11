@@ -96,21 +96,6 @@
       "note": ""
     },
     {
-      "id": 1789120626044,
-      "empId": 1781269051742,
-      "date": "2026-09-08",
-      "type": "urlaub",
-      "note": "",
-      "from": null,
-      "to": null,
-      "break": 0,
-      "duration": 0,
-      "km": 0,
-      "kmKosten": 0,
-      "diaet": false,
-      "diaetKosten": 0
-    },
-    {
       "id": 1788958700371,
       "empId": 1788951113648,
       "date": "2026-09-07",
