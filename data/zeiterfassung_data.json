@@ -19,7 +19,7 @@
           "hours": 7.75
         }
       ],
-      "vacUsedOverride": 0,
+      "vacUsedOverride": null,
       "hoursHistory": [
         {
           "from": "2026-01-01",
