@@ -13,7 +13,12 @@
       "email": "m.gehrer@holdhausnord.at",
       "hours": 40,
       "vacDays": 16,
-      "otCorrections": [],
+      "otCorrections": [
+        {
+          "month": "2026-04",
+          "hours": 7.75
+        }
+      ],
       "vacUsedOverride": null,
       "hoursHistory": [
         {
