@@ -28,14 +28,14 @@
       "name": "Matthias Gehrer",
       "email": "m.gehrer@holdhausnord.at",
       "hours": 10,
-      "vacDays": 25,
+      "vacDays": 27,
       "otCorrections": [
         {
           "month": "2026-04",
           "hours": 7.75
         }
       ],
-      "vacUsedOverride": 12,
+      "vacUsedOverride": 0,
       "hoursHistory": [
         {
           "from": "2026-01-01",
