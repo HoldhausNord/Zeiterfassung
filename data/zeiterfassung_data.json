@@ -27,15 +27,15 @@
       "id": 1781269051742,
       "name": "Matthias Gehrer",
       "email": "m.gehrer@holdhausnord.at",
-      "hours": 40,
-      "vacDays": 15,
+      "hours": 10,
+      "vacDays": 25,
       "otCorrections": [
         {
           "month": "2026-04",
           "hours": 7.75
         }
       ],
-      "vacUsedOverride": 4,
+      "vacUsedOverride": 12,
       "hoursHistory": [
         {
           "from": "2026-01-01",
