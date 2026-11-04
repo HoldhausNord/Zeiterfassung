@@ -570,21 +570,6 @@
       "note": ""
     },
     {
-      "id": 1793823459076,
-      "empId": 1781269140251,
-      "date": "2026-10-19",
-      "type": "krankenstand",
-      "note": "",
-      "from": null,
-      "to": null,
-      "break": 0,
-      "duration": 0,
-      "km": 0,
-      "kmKosten": 0,
-      "diaet": false,
-      "diaetKosten": 0
-    },
-    {
       "id": 1792502038571,
       "empId": 1788951113648,
       "date": "2026-10-19",
