@@ -135,21 +135,6 @@
       "diaetKosten": 0
     },
     {
-      "id": 1793973690643,
-      "empId": 1788951113648,
-      "date": "2026-11-06",
-      "type": "arbeitszeit",
-      "from": "11:00",
-      "to": "15:00",
-      "break": 30,
-      "duration": 12600000,
-      "km": 0,
-      "kmKosten": 0,
-      "diaet": false,
-      "diaetKosten": 0,
-      "note": ""
-    },
-    {
       "id": 1793953711890,
       "empId": 1783595295646,
       "date": "2026-11-06",
