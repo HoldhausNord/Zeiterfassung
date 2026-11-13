@@ -77,7 +77,11 @@
       "email": "m.schmid@holdhausnord.at",
       "hours": 8,
       "vacDays": 5,
-      "otOffset": 10
+      "otOffset": 10,
+      "workDays": [
+        5
+      ],
+      "vacUsedOverride": null
     },
     {
       "id": 1788951113648,
