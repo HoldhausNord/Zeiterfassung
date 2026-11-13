@@ -86,7 +86,15 @@
       "hours": 28,
       "vacDays": 25,
       "otOffset": 0,
-      "otCorrections": []
+      "otCorrections": [],
+      "workDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "vacUsedOverride": -14
     }
   ],
   "entries": [
