@@ -67,10 +67,6 @@
         {
           "month": "2026-04",
           "hours": 88.25
-        },
-        {
-          "month": "2026-10",
-          "hours": -50
         }
       ],
       "vacUsedOverride": 3
